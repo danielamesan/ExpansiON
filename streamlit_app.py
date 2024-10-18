@@ -147,6 +147,7 @@ def buscar_locales_cerca(tipo_punto, rango):
 
 
 # Streamlit App
+st.image("marca.png", use_column_width=True)
 st.title("Encuentra espacios con ExpansiON")
 st.subheader("Selecciona los siguientes datos:")
 
@@ -191,7 +192,7 @@ with col4:
     estrato = st.selectbox("Estrato:", options=estratos_unicos) 
 
 # Botón para buscar
-if st.button("Buscar Locales"):
+if st.button("Buscar Locales", use_column_width=True):
     # Llama a la función de búsqueda
     resultados_encontrados = buscar_locales_cerca(tipo_punto_interes, rango_busqueda)
 
