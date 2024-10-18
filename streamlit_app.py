@@ -166,10 +166,11 @@ with col1:
 # Filtro por Área (slider)
 with col2:    
     area_min, area_max = df_locales['area'].min(), df_locales['area'].max()
+    area_max = min(area_max, 4000)
     area_min_selected, area_max_selected = st.slider(
         "Rango de área:",
         min_value=float(area_min),
-        max_value=4000,
+        max_value=float(area_max),
         value=(float(area_min), float(area_max))
     )
 
