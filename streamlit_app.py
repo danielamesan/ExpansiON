@@ -30,30 +30,21 @@ st.markdown("""
     }
     .stButton>button {
         background-color: #9b59b6;  /* Color lila para botones */
-        color: white;  /* Color del texto de los botones */
+        color: #FFFFFF;  /* Color del texto de los botones */
     }
     .stTextInput>div>input {
-        background-color: white;  /* Fondo blanco para inputs */
+        background-color: #FFFFFF;  /* Fondo blanco para inputs */
         color: #3b3b3b;  /* Color del texto (gris oscuro) */
     }
     .stMarkdown {
-        color: #3b3b3b;  /* Color del texto (gris oscuro) */
+        color: #000000;  /* Color del texto (negro) */
     }
-    /* Estilos para el slider */
-    .stSlider {
-        padding: 0;  /* Elimina el padding del slider */
-    }
+  
     /* Cambiar el color de la barra del slider */
-    .stSlider div.st-bq {
-        background-color: #9b59b6;  /* Color de la barra de fondo del slider */
+    .stSlider .my-slider .st-bq {
+        background-color: #9b59b6;
     }
-    /* Cambiar el color del control deslizante */
-    .stSlider div.st-bq div {
-        background-color: #9b59b6;  /* Color del control deslizante */
-    }
-    .stSlider div.st-bq div:hover {
-        background-color: #8e44ad;  /* Color del control deslizante al pasar el ratón */
-    }
+  
     /* Estilo para el botón de búsqueda */
     .full-width-button {
         width: 100%;
@@ -246,7 +237,7 @@ if st.button("Buscar Locales"):
                 folium.Marker(
                     [row.geometry.y, row.geometry.x],
                     popup=f"{row['Propiedad']} - ${row['Precio']}",
-                    icon=folium.Icon(color='blue', icon='home')
+                    icon=folium.Icon(color='purple', icon='home')
                 ).add_to(mapa_bogota)
     
             # Añadir puntos de interés al mapa
@@ -254,7 +245,7 @@ if st.button("Buscar Locales"):
                 folium.Marker(
                     [row.geometry.y, row.geometry.x],
                     popup=f"{row['Tipo de punto']}: {row['Punto de Interés Nombre']}",
-                    icon=folium.Icon(color='red', icon='info-sign')
+                    icon=folium.Icon(color='green', icon='info-sign')
                 ).add_to(mapa_bogota)
     
             # Mostrar el mapa en Streamlit
