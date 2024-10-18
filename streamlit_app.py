@@ -231,19 +231,31 @@ if st.button("Buscar Locales"):
                # Crear un mapa centrado en las coordenadas promedio de los locales encontrados
                 lat_promedio = resultados_unicos['Coordenada Local'].apply(lambda x: float(x.split(',')[0][1:])).mean()
                 lon_promedio = resultados_unicos['Coordenada Local'].apply(lambda x: float(x.split(',')[1][:-1])).mean()
-            
+                
                 mapa = folium.Map(location=[lat_promedio, lon_promedio], zoom_start=13)
-            
+                
                 # Añadir marcadores para los locales
                 for index, local in resultados_unicos.iterrows():
                     # Extraer latitud y longitud de 'Coordenada Local'
                     coordenadas = local['Coordenada Local'].strip('()')  # Quitar paréntesis
                     latitud, longitud = map(float, coordenadas.split(','))  # Dividir y convertir a float
-                
+                    
                     folium.Marker(
-                        location=(latitud, longitud),  # Usar las coordenadas extraídas
-                        popup=local['Propiedad'],
-                        icon=folium.Icon(color='blue')
+                        location=(latitud, longitud),
+                        popup=f"{local['Propiedad']} - ${local['Precio']}",
+                        icon=folium.Icon(color='blue', icon='home')
+                    ).add_to(mapa)
+                
+                # Añadir marcadores para los puntos de interés
+                for index, poi in resultados_unicos.iterrows():
+                    # Extraer latitud y longitud de 'Coordenada Punto'
+                    coordenadas_poi = poi['Coordenada Punto'].strip('()')
+                    latitud_poi, longitud_poi = map(float, coordenadas_poi.split(','))
+                    
+                    folium.Marker(
+                        location=(latitud_poi, longitud_poi),
+                        popup=f"{poi['Tipo de punto']}: {poi['Punto de Interés Nombre']}",
+                        icon=folium.Icon(color='red', icon='info-sign')
                     ).add_to(mapa)
                 
                 # Mostrar el mapa en Streamlit
@@ -274,9 +286,7 @@ if st.button("Buscar Locales"):
                                     f"**Arrendatario:** {data['Arrendatario']}  \n"
                                     f"**Tipo de Punto de Interés:** {data['Tipo de punto']}  \n"
                                     f"**Punto de Interés Nombre:** {data['Punto de Interés Nombre']}  \n"
-                                    f"**Distancia (metros):** {data['Distancia (metros)']:.2f}  \n"
-                                    f"**Coordenada Local:** {data['Coordenada Local']}  \n"
-                                    f"**Coordenada Punto:** {data['Coordenada Punto']}  \n")
+                                    f"**Distancia (metros):** {data['Distancia (metros)']:.2f}  \n")
                         st.markdown("---")  # Línea de separación entre resultados
 
         else:
