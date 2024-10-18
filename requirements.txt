@@ -1,2 +1,7 @@
 streamlit
 pandas
+shapely
+geopandas
+streamlit==1.27.2
+streamlit-folium==0.13.0
+folium==0.14.0
