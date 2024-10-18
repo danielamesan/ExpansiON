@@ -1,10 +1,23 @@
+#pip install pandas
+#pip install shapely
+#pip install geopandas
 
-import pandas as pd
-from shapely import wkt
-from shapely.geometry import Point
-import geopandas as gpd
-import math
 import streamlit as st
+import pandas as pd
+from shapely import wkt  # Para procesar la geometría de los puntos de interés
+from shapely.geometry import Point  # Importar Point
+import geopandas as gpd
+from math import radians, cos, sin, sqrt, atan2
+import math
+from pathlib import Path
+import folium
+from streamlit_folium import folium_static
+
+# Set the title and favicon that appear in the Browser's tab bar.
+st.set_page_config(
+    page_title='ExpansiON App',
+    page_icon='/workspaces/ExpansiON/logo.png', # This is an emoji shortcode. Could be a URL too.
+)
 
 # Función para calcular la distancia entre dos puntos geográficos
 def haversine(lat1, lon1, lat2, lon2):
@@ -16,13 +29,18 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c * 1000  # Devuelve la distancia en metros
 
 # Cargar los datos de los CSV
-df_locales = pd.read_csv('fincaraiz_final.csv')
-df_puntos_interes = pd.read_csv('bogota_filtered_pois.csv')
+df_locales = pd.read_csv('/workspaces/ExpansiON/fincaraiz_final.csv')
+df_puntos_interes = pd.read_csv('/workspaces/ExpansiON/bogota_filtered_pois.csv')
 
 # Invertir coordenadas de los locales y separar latitud y longitud
 df_locales[['latitud', 'longitud']] = df_locales['location_point'].str.split(', ', expand=True)
 df_locales['latitud'] = df_locales['latitud'].astype(float)
 df_locales['longitud'] = df_locales['longitud'].astype(float)
+df_locales['area'] = df_locales['area'].str.replace(' m²', '', regex=False).astype(float)
+df_locales = df_locales.dropna(subset=['estrato'])
+df_locales['estrato'] = df_locales['estrato'].astype(str)
+df_locales['estrato'] = df_locales['estrato'].replace({' 110.0': '6.0', '110.0 ': '6.0', '110.0': '6.0'})
+
 
 # Convertir la columna 'geometry' a objetos geométricos usando WKT
 df_puntos_interes['geometry'] = df_puntos_interes['geometry'].apply(wkt.loads)
@@ -54,212 +72,182 @@ def buscar_locales_cerca(tipo_punto, rango):
             
             if distancia <= rango:
                 resultados.append({
-                    'Título': local['title'],  # Columna de df_locales
+                    'Propiedad': local['property_type'],  # Columna de df_locales
                     'Precio': local['price'],  # Columna de df_locales
-                    'Área': local['area'],  # Columna de df_locales
-                    'Tipo de propiedad': local['property_type'],  # Columna de df_locales
+                    'Area': local['area'],  # Columna de df_locales
                     'Estrato': local['estrato'],  # Columna de df_locales
                     'Baños': local['bathrooms'],  # Columna de df_locales
+                    'Imagen': local['main_image'],
+                    'Carousel': local['carousel_images'],
+                    'Arrendatario': local['publisher'],  # Columna de df_locales
                     'Habitaciones': local['bedrooms'],  # Columna de df_locales
                     'Garaje': local['garage'],  # Columna de df_locales
+                    'Tipo de punto': punto['amenity'],
                     'Punto de Interés Nombre': punto['name'],  # Columna de df_puntos_interes
-                    'Distancia (metros)': distancia  # Distancia en metros
+                    'Distancia (metros)': distancia,  # Distancia en metros
+                    'Coordenada Local': f"({local['latitud']}, {local['longitud']})",  # Coordenadas del local
+                    'Coordenada Punto': f"({punto['latitud']}, {punto['longitud']})"  # Coordenadas del punto de interés
                 })
 
     # Convertir resultados a DataFrame
     df_resultados = pd.DataFrame(resultados)
     return df_resultados
 
+
 # Streamlit App
-st.title("Búsqueda de Locales Cercanos a Puntos de Interés")
+st.title("Encuentra espacios con ExpansiON")
+st.subheader("Selecciona los siguientes datos:")
 
 # Selector para tipo de punto de interés
-tipos_puntos_interes = df_puntos_interes['name'].unique()
-tipo_punto_interes = st.selectbox("Selecciona un tipo de punto de interés:", tipos_puntos_interes)
+tipos_puntos_interes = df_puntos_interes['amenity'].unique()
 
-# Slider para rango de búsqueda
-rango_busqueda = st.slider("Selecciona el rango de búsqueda (en metros):", min_value=0, max_value=3000, value=500)
+# Crear dos columnas para el tipo de punto de interés y el rango de búsqueda
+col1, col2 = st.columns(2)
+
+# Filtro en la primera columna
+with col1:
+    tipo_punto_interes = st.selectbox("Tipo de punto de interés:", tipos_puntos_interes)
+
+# Slicer en la segunda columna
+with col2:
+    rango_busqueda = st.slider("Rango de búsqueda (en metros):", min_value=0, max_value=3000, value=500)
+
+# Filtros (fuera del botón de búsqueda)
+col1, col2, col3, col4 = st.columns(4)
+
+# Filtro por Tipo de Propiedad (botones)
+with col1:
+    tipo_propiedad = st.multiselect("Tipo de propiedad:", df_locales['property_type'].unique().tolist())
+
+# Filtro por Área (slider)
+with col2:    
+    area_min, area_max = df_locales['area'].min(), df_locales['area'].max()
+    area_min_selected, area_max_selected = st.slider(
+        "Rango de área:",
+        min_value=float(area_min),
+        max_value=float(area_max),
+        value=(float(area_min), float(area_max))
+    )
+
+# Filtro por Precio (slider)
+with col3:
+    precio_min, precio_max = st.slider("Rango de precios:", 0, 1000000, (0, 1000000))
+
+# Filtro por Estrato (botones)
+with col4:
+    estratos_unicos = sorted(df_locales['estrato'].unique().tolist())
+    estrato = st.selectbox("Estrato:", options=estratos_unicos) 
 
 # Botón para buscar
 if st.button("Buscar Locales"):
+    # Llama a la función de búsqueda
     resultados_encontrados = buscar_locales_cerca(tipo_punto_interes, rango_busqueda)
 
-    # Mostrar resultados
+    # Aplicar filtros adicionales a los resultados
     if not resultados_encontrados.empty:
-        st.write(f"Locales encontrados cerca de {tipo_punto_interes} en un rango de {rango_busqueda} metros:")
-        st.dataframe(resultados_encontrados)
-    else:
-        st.write(f"No se encontraron locales cerca de {tipo_punto_interes} en un rango de {rango_busqueda} metros.")
+        # Filtrar por tipo de propiedad
+        if tipo_propiedad:
+            resultados_encontrados = resultados_encontrados[resultados_encontrados['Propiedad'].isin(tipo_propiedad)]
+        
+        # Filtrar por área
+        if area_min_selected and area_max_selected:
+            resultados_encontrados = resultados_encontrados[
+                (resultados_encontrados['Area'] >= area_min_selected) & 
+                (resultados_encontrados['Area'] <= area_max_selected)
+            ]
+        
+        # Filtrar por precio
+        if precio_min and precio_max:
+            resultados_encontrados = resultados_encontrados[
+                (resultados_encontrados['Precio'] >= precio_min) & 
+                (resultados_encontrados['Precio'] <= precio_max)
+            ]
 
+        # Filtrar por estrato
+        if estrato:
+            resultados_encontrados = resultados_encontrados[resultados_encontrados['Estrato'] == estrato]
 
+        total_inmuebles = len(resultados_encontrados)
+        st.info(f"El total de inmuebles comerciales en arrendamiento alrededor de este punto de interés es de: {total_inmuebles}")
+        
+       # Eliminar duplicados basados en una columna clave como 'Propiedad' o algún ID único
+        resultados_unicos = resultados_encontrados.drop_duplicates(subset=['Coordenada Local'])  # Ajusta la columna clave
 
+        # Generar tarjetas para cada resultado encontrado
+        if not resultados_unicos.empty:
+            total_inmuebles = len(resultados_unicos)
+            st.info(f"El total de inmuebles comerciales en arrendamiento alrededor de este punto de interés es de: {total_inmuebles}")
 
+            # Definir cuántos resultados por fila (en este caso 3 por fila)
+            cols_per_row = 3
+            rows = [resultados_unicos.iloc[i:i+cols_per_row] for i in range(0, len(resultados_unicos), cols_per_row)]
 
+            for row in rows:
+                cols = st.columns(cols_per_row)  # Dividir la fila en 3 columnas
+                for index, (col, result) in enumerate(zip(cols, row.iterrows())):
+                    _, data = result  # 'data' contiene la fila actual del DataFrame
+                    
+                    with col:
+                        # Crear un contenedor con un tamaño fijo para la imagen
+                        st.markdown(f"<div style='width:150px; height:150px; overflow:hidden; text-align:center;'>"
+                                    f"<img src='{data['Imagen']}' style='max-width:100%; max-height:100%;'></div>", 
+                                    unsafe_allow_html=True)
+                        
+                        # Mostrar la información de la propiedad debajo de la imagen
+                        st.markdown(f"### {data['Propiedad']} - ${data['Precio']}")
+                        st.markdown(f"**Área:** {data['Area']} m²  \n"
+                                    f"**Estrato:** {data['Estrato']}  \n"
+                                    f"**Baños:** {data['Baños']}  \n"
+                                    f"**Habitaciones:** {data['Habitaciones']}  \n"
+                                    f"**Garaje:** {data['Garaje']}  \n"
+                                    f"**Arrendatario:** {data['Arrendatario']}  \n"
+                                    f"**Tipo de Punto de Interés:** {data['Tipo de punto']}  \n"
+                                    f"**Punto de Interés Nombre:** {data['Punto de Interés Nombre']}  \n"
+                                    f"**Distancia (metros):** {data['Distancia (metros)']:.2f}  \n"
+                                    f"**Coordenada Local:** {data['Coordenada Local']}  \n"
+                                    f"**Coordenada Punto:** {data['Coordenada Punto']}  \n")
+                        st.markdown("---")  # Línea de separación entre resultados
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
-
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
-
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
-
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
-
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
-
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
-
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
-
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
         else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
+            st.warning("No se encontraron resultados para los criterios seleccionados.")
 
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+
+
+#----------------------------------------------------
+# Estilos personalizados
+st.markdown(
+    """
+    <style>
+    .reportview-container {
+        background-color: #f2e9f5;  /* Color de fondo suave (lila claro) */
+    }
+    .stButton>button {
+        background-color: #9b59b6;  /* Color lila para botones */
+        color: white;  /* Color del texto de los botones */
+    }
+    .stTextInput>div>input {
+        background-color: white;  /* Fondo blanco para inputs */
+        color: #3b3b3b;  /* Color del texto (gris oscuro) */
+    }
+    .stMarkdown {
+        color: #3b3b3b;  /* Color del texto (gris oscuro) */
+    }
+    /* Estilos para el slider */
+    .stSlider {
+        padding: 0;  /* Elimina el padding del slider */
+    }
+    /* Cambiar el color de la barra del slider */
+    .stSlider div.st-bq {
+        background-color: #9b59b6;  /* Color de la barra de fondo del slider */
+    }
+    /* Cambiar el color del control deslizante */
+    .stSlider div.st-bq div {
+        background-color: #9b59b6;  /* Color del control deslizante */
+    }
+    .stSlider div.st-bq div:hover {
+        background-color: #8e44ad;  /* Color del control deslizante al pasar el ratón */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
