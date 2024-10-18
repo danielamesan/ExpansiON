@@ -234,31 +234,16 @@ if st.button("Buscar Locales"):
             
                 mapa = folium.Map(location=[lat_promedio, lon_promedio], zoom_start=13)
             
+                # Añadir marcadores para los locales
                 for index, local in resultados_unicos.iterrows():
-                    # Extraer latitud y longitud de Coordenada Local
-                    latitud = float(resultados_unicos['Coordenada Local'].split(',')[0][1:])
-                    longitud = float(resultados_unicos['Coordenada Local'].split(',')[1][:-1])
-                    
+                    # Extraer latitud y longitud de 'Coordenada Local'
+                    coordenadas = local['Coordenada Local'].strip('()')  # Quitar paréntesis
+                    latitud, longitud = map(float, coordenadas.split(','))  # Dividir y convertir a float
+                
                     folium.Marker(
-                        location=(latitud, longitud),
+                        location=(latitud, longitud),  # Usar las coordenadas extraídas
                         popup=local['Propiedad'],
                         icon=folium.Icon(color='blue')
-                    ).add_to(mapa)
-            
-                folium_static(mapa)
-
-                # Añadir marcadores para los puntos de interés en resultados_unicos
-                puntos_interes_cercanos = df_puntos_interes[df_puntos_interes['amenity'].str.lower() == tipo_punto_interes.lower()]
-                
-                for _, punto in puntos_interes_cercanos.iterrows():
-                    # Si la columna 'coordenada punto' está en formato (latitud, longitud)
-                    latitud = float(punto['coordenada punto'].split(',')[0][1:])  # Extraer latitud
-                    longitud = float(punto['coordenada punto'].split(',')[1][:-1]) # Extraer longitud
-                
-                    folium.Marker(
-                        location=(latitud, longitud),
-                        popup=f"<strong>{punto['name']}</strong>",
-                        icon=folium.Icon(color='green')
                     ).add_to(mapa)
                 
                 # Mostrar el mapa en Streamlit
