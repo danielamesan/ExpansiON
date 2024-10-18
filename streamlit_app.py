@@ -228,37 +228,37 @@ if st.button("Buscar Locales"):
             total_inmuebles = len(resultados_unicos)
             st.info(f"El total de inmuebles comerciales en arrendamiento alrededor de este punto de interés es de: {total_inmuebles}")
 
-                       # Crear GeoDataFrame para los locales
-                        geometry_locales = [Point(float(coord.split(',')[1][:-1]), float(coord.split(',')[0][1:])) 
-                                            for coord in resultados_encontrados['Coordenada Local']]
-                        gdf_locales = gpd.GeoDataFrame(resultados_encontrados, geometry=geometry_locales, crs="EPSG:4326")
-                
-                        # Crear GeoDataFrame para los puntos de interés
-                        geometry_pois = [Point(float(coord.split(',')[1][:-1]), float(coord.split(',')[0][1:])) 
-                                         for coord in resultados_encontrados['Coordenada Punto']]
-                        gdf_pois = gpd.GeoDataFrame(resultados_encontrados, geometry=geometry_pois, crs="EPSG:4326")
-                
-                        # Crear un mapa centrado en Bogotá
-                        mapa_bogota = folium.Map(location=[4.711, -74.072], zoom_start=12)
-                
-                        # Añadir locales al mapa
-                        for idx, row in gdf_locales.iterrows():
-                            folium.Marker(
-                                [row.geometry.y, row.geometry.x],
-                                popup=f"{row['Propiedad']} - ${row['Precio']}",
-                                icon=folium.Icon(color='blue', icon='home')
-                            ).add_to(mapa_bogota)
-                
-                        # Añadir puntos de interés al mapa
-                        for idx, row in gdf_pois.iterrows():
-                            folium.Marker(
-                                [row.geometry.y, row.geometry.x],
-                                popup=f"{row['Tipo de punto']}: {row['Punto de Interés Nombre']}",
-                                icon=folium.Icon(color='red', icon='info-sign')
-                            ).add_to(mapa_bogota)
-                
-                        # Mostrar el mapa en Streamlit
-                        folium_static(mapa_bogota)
+           # Crear GeoDataFrame para los locales
+            geometry_locales = [Point(float(coord.split(',')[1][:-1]), float(coord.split(',')[0][1:])) 
+                                for coord in resultados_encontrados['Coordenada Local']]
+            gdf_locales = gpd.GeoDataFrame(resultados_encontrados, geometry=geometry_locales, crs="EPSG:4326")
+    
+            # Crear GeoDataFrame para los puntos de interés
+            geometry_pois = [Point(float(coord.split(',')[1][:-1]), float(coord.split(',')[0][1:])) 
+                             for coord in resultados_encontrados['Coordenada Punto']]
+            gdf_pois = gpd.GeoDataFrame(resultados_encontrados, geometry=geometry_pois, crs="EPSG:4326")
+    
+            # Crear un mapa centrado en Bogotá
+            mapa_bogota = folium.Map(location=[4.711, -74.072], zoom_start=12)
+    
+            # Añadir locales al mapa
+            for idx, row in gdf_locales.iterrows():
+                folium.Marker(
+                    [row.geometry.y, row.geometry.x],
+                    popup=f"{row['Propiedad']} - ${row['Precio']}",
+                    icon=folium.Icon(color='blue', icon='home')
+                ).add_to(mapa_bogota)
+    
+            # Añadir puntos de interés al mapa
+            for idx, row in gdf_pois.iterrows():
+                folium.Marker(
+                    [row.geometry.y, row.geometry.x],
+                    popup=f"{row['Tipo de punto']}: {row['Punto de Interés Nombre']}",
+                    icon=folium.Icon(color='red', icon='info-sign')
+                ).add_to(mapa_bogota)
+    
+            # Mostrar el mapa en Streamlit
+            folium_static(mapa_bogota)
             
             # Definir cuántos resultados por fila (en este caso 3 por fila)
             cols_per_row = 3
