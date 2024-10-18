@@ -16,7 +16,7 @@ from streamlit_folium import folium_static
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
     page_title='ExpansiON App',
-    page_icon='/workspaces/ExpansiON/logo.png', # This is an emoji shortcode. Could be a URL too.
+    page_icon='logo.png', # This is an emoji shortcode. Could be a URL too.
 )
 
 # Función para calcular la distancia entre dos puntos geográficos
@@ -29,8 +29,8 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c * 1000  # Devuelve la distancia en metros
 
 # Cargar los datos de los CSV
-df_locales = pd.read_csv('/workspaces/ExpansiON/fincaraiz_final.csv')
-df_puntos_interes = pd.read_csv('/workspaces/ExpansiON/bogota_filtered_pois.csv')
+df_locales = pd.read_csv('fincaraiz_final.csv')
+df_puntos_interes = pd.read_csv('bogota_filtered_pois.csv')
 
 # Invertir coordenadas de los locales y separar latitud y longitud
 df_locales[['latitud', 'longitud']] = df_locales['location_point'].str.split(', ', expand=True)
