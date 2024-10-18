@@ -14,6 +14,14 @@ import folium
 from streamlit_folium import folium_static
 
 #----------------------------------------------------
+# Set the title and favicon that appear in the Browser's tab bar.
+st.set_page_config(
+    page_title='ExpansiON App',
+    page_icon='logo.png', # This is an emoji shortcode. Could be a URL too.
+)
+
+
+#----------------------------------------------------
 # CSS para estilizar la aplicación
 st.markdown("""
     <style>
@@ -63,12 +71,6 @@ st.markdown("""
 
 
 #----------------------------------------------------
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='ExpansiON App',
-    page_icon='logo.png', # This is an emoji shortcode. Could be a URL too.
-)
-
 # Función para calcular la distancia entre dos puntos geográficos
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371  # Radio de la Tierra en kilómetros
