@@ -13,6 +13,56 @@ from pathlib import Path
 import folium
 from streamlit_folium import folium_static
 
+#----------------------------------------------------
+# CSS para estilizar la aplicación
+st.markdown("""
+    <style>
+    .reportview-container {
+        background-color: #f2e9f5;  /* Color de fondo suave (lila claro) */
+    }
+    .stButton>button {
+        background-color: #9b59b6;  /* Color lila para botones */
+        color: white;  /* Color del texto de los botones */
+    }
+    .stTextInput>div>input {
+        background-color: white;  /* Fondo blanco para inputs */
+        color: #3b3b3b;  /* Color del texto (gris oscuro) */
+    }
+    .stMarkdown {
+        color: #3b3b3b;  /* Color del texto (gris oscuro) */
+    }
+    /* Estilos para el slider */
+    .stSlider {
+        padding: 0;  /* Elimina el padding del slider */
+    }
+    /* Cambiar el color de la barra del slider */
+    .stSlider div.st-bq {
+        background-color: #9b59b6;  /* Color de la barra de fondo del slider */
+    }
+    /* Cambiar el color del control deslizante */
+    .stSlider div.st-bq div {
+        background-color: #9b59b6;  /* Color del control deslizante */
+    }
+    .stSlider div.st-bq div:hover {
+        background-color: #8e44ad;  /* Color del control deslizante al pasar el ratón */
+    }
+    /* Estilo para el botón de búsqueda */
+    .full-width-button {
+        width: 100%;
+        background-color: #4CAF50; /* Cambia el color de fondo */
+        color: white; /* Cambia el color del texto */
+        border: none; /* Elimina el borde */
+        padding: 15px; /* Añade espacio interno */
+        text-align: center; /* Centra el texto */
+        font-size: 16px; /* Tamaño de fuente */
+        cursor: pointer; /* Cambia el cursor al pasar el ratón */
+        border-radius: 5px; /* Esquinas redondeadas */
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+#----------------------------------------------------
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
     page_title='ExpansiON App',
@@ -139,7 +189,7 @@ with col4:
     estrato = st.selectbox("Estrato:", options=estratos_unicos) 
 
 # Botón para buscar
-if st.button("Buscar Locales"):
+if st.button("Buscar Locales", key="buscar_locales", css_class="full-width-button"):
     # Llama a la función de búsqueda
     resultados_encontrados = buscar_locales_cerca(tipo_punto_interes, rango_busqueda)
 
@@ -208,43 +258,3 @@ if st.button("Buscar Locales"):
         else:
             st.warning("No se encontraron resultados para los criterios seleccionados.")
 
-
-
-#----------------------------------------------------
-# Estilos personalizados
-st.markdown(
-    """
-    <style>
-    .reportview-container {
-        background-color: #f2e9f5;  /* Color de fondo suave (lila claro) */
-    }
-    .stButton>button {
-        background-color: #9b59b6;  /* Color lila para botones */
-        color: white;  /* Color del texto de los botones */
-    }
-    .stTextInput>div>input {
-        background-color: white;  /* Fondo blanco para inputs */
-        color: #3b3b3b;  /* Color del texto (gris oscuro) */
-    }
-    .stMarkdown {
-        color: #3b3b3b;  /* Color del texto (gris oscuro) */
-    }
-    /* Estilos para el slider */
-    .stSlider {
-        padding: 0;  /* Elimina el padding del slider */
-    }
-    /* Cambiar el color de la barra del slider */
-    .stSlider div.st-bq {
-        background-color: #9b59b6;  /* Color de la barra de fondo del slider */
-    }
-    /* Cambiar el color del control deslizante */
-    .stSlider div.st-bq div {
-        background-color: #9b59b6;  /* Color del control deslizante */
-    }
-    .stSlider div.st-bq div:hover {
-        background-color: #8e44ad;  /* Color del control deslizante al pasar el ratón */
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
