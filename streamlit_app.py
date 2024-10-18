@@ -1,3 +1,117 @@
+
+import pandas as pd
+from shapely import wkt
+from shapely.geometry import Point
+import geopandas as gpd
+import math
+import streamlit as st
+
+# Función para calcular la distancia entre dos puntos geográficos
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Radio de la Tierra en kilómetros
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    return R * c * 1000  # Devuelve la distancia en metros
+
+# Cargar los datos de los CSV
+df_locales = pd.read_csv('fincaraiz_final.csv')
+df_puntos_interes = pd.read_csv('bogota_filtered_pois.csv')
+
+# Invertir coordenadas de los locales y separar latitud y longitud
+df_locales[['latitud', 'longitud']] = df_locales['location_point'].str.split(', ', expand=True)
+df_locales['latitud'] = df_locales['latitud'].astype(float)
+df_locales['longitud'] = df_locales['longitud'].astype(float)
+
+# Convertir la columna 'geometry' a objetos geométricos usando WKT
+df_puntos_interes['geometry'] = df_puntos_interes['geometry'].apply(wkt.loads)
+
+# Filtrar solo los objetos que son de tipo Point
+df_puntos_interes = df_puntos_interes[df_puntos_interes['geometry'].apply(lambda x: isinstance(x, Point))]
+
+# Extraer latitud y longitud de los puntos de interés
+df_puntos_interes['latitud'] = df_puntos_interes['geometry'].apply(lambda point: point.y)
+df_puntos_interes['longitud'] = df_puntos_interes['geometry'].apply(lambda point: point.x)
+
+# Función para buscar locales cerca de un tipo de punto de interés
+def buscar_locales_cerca(tipo_punto, rango):
+    # Filtrar puntos de interés por tipo
+    puntos_interes_filtrados = df_puntos_interes[df_puntos_interes['amenity'].str.lower() == tipo_punto.lower()]
+    
+    resultados = []
+
+    # Calcular distancias
+    for index_local, local in df_locales.iterrows():
+        local_lat = local['latitud']
+        local_lon = local['longitud']
+        
+        for index_punto, punto in puntos_interes_filtrados.iterrows():
+            punto_lat = punto['latitud']
+            punto_lon = punto['longitud']
+            
+            distancia = haversine(local_lat, local_lon, punto_lat, punto_lon)
+            
+            if distancia <= rango:
+                resultados.append({
+                    'Título': local['title'],  # Columna de df_locales
+                    'Precio': local['price'],  # Columna de df_locales
+                    'Área': local['area'],  # Columna de df_locales
+                    'Tipo de propiedad': local['property_type'],  # Columna de df_locales
+                    'Estrato': local['estrato'],  # Columna de df_locales
+                    'Baños': local['bathrooms'],  # Columna de df_locales
+                    'Habitaciones': local['bedrooms'],  # Columna de df_locales
+                    'Garaje': local['garage'],  # Columna de df_locales
+                    'Punto de Interés Nombre': punto['name'],  # Columna de df_puntos_interes
+                    'Distancia (metros)': distancia  # Distancia en metros
+                })
+
+    # Convertir resultados a DataFrame
+    df_resultados = pd.DataFrame(resultados)
+    return df_resultados
+
+# Streamlit App
+st.title("Búsqueda de Locales Cercanos a Puntos de Interés")
+
+# Selector para tipo de punto de interés
+tipos_puntos_interes = df_puntos_interes['name'].unique()
+tipo_punto_interes = st.selectbox("Selecciona un tipo de punto de interés:", tipos_puntos_interes)
+
+# Slider para rango de búsqueda
+rango_busqueda = st.slider("Selecciona el rango de búsqueda (en metros):", min_value=0, max_value=3000, value=500)
+
+# Botón para buscar
+if st.button("Buscar Locales"):
+    resultados_encontrados = buscar_locales_cerca(tipo_punto_interes, rango_busqueda)
+
+    # Mostrar resultados
+    if not resultados_encontrados.empty:
+        st.write(f"Locales encontrados cerca de {tipo_punto_interes} en un rango de {rango_busqueda} metros:")
+        st.dataframe(resultados_encontrados)
+    else:
+        st.write(f"No se encontraron locales cerca de {tipo_punto_interes} en un rango de {rango_busqueda} metros.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import streamlit as st
 import pandas as pd
 import math
