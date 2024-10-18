@@ -166,9 +166,6 @@ if st.button("Buscar Locales"):
         # Filtrar por estrato
         if estrato:
             resultados_encontrados = resultados_encontrados[resultados_encontrados['Estrato'] == estrato]
-
-        total_inmuebles = len(resultados_encontrados)
-        st.info(f"El total de inmuebles comerciales en arrendamiento alrededor de este punto de interés es de: {total_inmuebles}")
         
        # Eliminar duplicados basados en una columna clave como 'Propiedad' o algún ID único
         resultados_unicos = resultados_encontrados.drop_duplicates(subset=['Coordenada Local'])  # Ajusta la columna clave
