@@ -192,7 +192,7 @@ with col4:
     estrato = st.selectbox("Estrato:", options=estratos_unicos) 
 
 # Botón para buscar
-if st.button("Buscar Locales", use_column_width=True):
+if st.button("Buscar Locales"):
     # Llama a la función de búsqueda
     resultados_encontrados = buscar_locales_cerca(tipo_punto_interes, rango_busqueda)
 
