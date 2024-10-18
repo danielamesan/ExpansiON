@@ -228,30 +228,41 @@ if st.button("Buscar Locales"):
             total_inmuebles = len(resultados_unicos)
             st.info(f"El total de inmuebles comerciales en arrendamiento alrededor de este punto de interés es de: {total_inmuebles}")
 
-            # Crear un mapa centrado en las coordenadas promedio de los locales encontrados
-            lat_promedio = resultados_unicos['Coordenada Local'].apply(lambda x: float(x.split(',')[0][1:])).mean()
-            lon_promedio = resultados_unicos['Coordenada Local'].apply(lambda x: float(x.split(',')[1][:-1])).mean()
-            mapa = folium.Map(location=[lat_promedio, lon_promedio], zoom_start=14)
+               # Crear un mapa centrado en las coordenadas promedio de los locales encontrados
+                lat_promedio = resultados_unicos['Coordenada Local'].apply(lambda x: float(x.split(',')[0][1:])).mean()
+                lon_promedio = resultados_unicos['Coordenada Local'].apply(lambda x: float(x.split(',')[1][:-1])).mean()
+            
+                mapa = folium.Map(location=[lat_promedio, lon_promedio], zoom_start=13)
+            
+                for index, local in resultados_unicos.iterrows():
+                    # Extraer latitud y longitud de Coordenada Local
+                    latitud = float(resultados_unicos['Coordenada Local'].split(',')[0][1:])
+                    longitud = float(resultados_unicos['Coordenada Local'].split(',')[1][:-1])
+                    
+                    folium.Marker(
+                        location=(latitud, longitud),
+                        popup=local['Propiedad'],
+                        icon=folium.Icon(color='blue')
+                    ).add_to(mapa)
+            
+                folium_static(mapa)
 
-            # Añadir marcadores para los locales
-            for _, data in resultados_unicos.iterrows():
-                folium.Marker(
-                    location=(data['latitud'], data['longitud']),
-                    popup=f"<strong>{data['Propiedad']}</strong><br>Precio: ${data['Precio']}<br>Área: {data['Area']} m²",
-                    icon=folium.Icon(color='purple')
-                ).add_to(mapa)
-
-            # Añadir marcadores para los puntos de interés
-            puntos_interes_cercanos = df_puntos_interes[df_puntos_interes['amenity'].str.lower() == tipo_punto_interes.lower()]
-            for _, punto in puntos_interes_cercanos.iterrows():
-                folium.Marker(
-                    location=(punto['latitud'], punto['longitud']),
-                    popup=f"<strong>{punto['name']}</strong>",
-                    icon=folium.Icon(color='green')
-                ).add_to(mapa)
-
-            # Mostrar el mapa en Streamlit
-            folium_static(mapa)
+                # Añadir marcadores para los puntos de interés en resultados_unicos
+                puntos_interes_cercanos = df_puntos_interes[df_puntos_interes['amenity'].str.lower() == tipo_punto_interes.lower()]
+                
+                for _, punto in puntos_interes_cercanos.iterrows():
+                    # Si la columna 'coordenada punto' está en formato (latitud, longitud)
+                    latitud = float(punto['coordenada punto'].split(',')[0][1:])  # Extraer latitud
+                    longitud = float(punto['coordenada punto'].split(',')[1][:-1]) # Extraer longitud
+                
+                    folium.Marker(
+                        location=(latitud, longitud),
+                        popup=f"<strong>{punto['name']}</strong>",
+                        icon=folium.Icon(color='green')
+                    ).add_to(mapa)
+                
+                # Mostrar el mapa en Streamlit
+                folium_static(mapa)
 
             # Definir cuántos resultados por fila (en este caso 3 por fila)
             cols_per_row = 3
