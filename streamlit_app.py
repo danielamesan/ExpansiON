@@ -169,7 +169,7 @@ with col2:
     area_min_selected, area_max_selected = st.slider(
         "Rango de área:",
         min_value=float(area_min),
-        max_value=float(area_max),
+        max_value=4000,
         value=(float(area_min), float(area_max))
     )
 
